@@ -1,45 +1,51 @@
 import pygame
 
-pygame.init()
-screen = pygame.display.set_mode((600, 600))
-pygame.display.set_caption("_ИДЗ_3_")
-icon = pygame.image.load("ИДЗ_3/utka20.png")
-pygame.display.set_icon(icon)
+class GameLabel:
+    def __init__(self, n, m):
+        self.cell_size = 50
+        self.grid_line_width = 4 # Толщина линний
+        self.margin = 10  # Отступ
+        self.width = n * self.cell_size + (n - 1) * self.grid_line_width + 2 * self.margin
+        self.heights = m * self.cell_size + (m - 1) * self.grid_line_width + 2 * self.margin
+        self.n = n
+        self.m = m
 
-square = pygame.Surface((100, 100))
-square.fill("White")
+    def init_screen(self):
+        pygame.init()
+        screen = pygame.display.set_mode((self.width, self.heights))
+        pygame.display.set_caption("_ИДЗ_3_")
+        icon = pygame.image.load("utka20.png")
+        pygame.display.set_icon(icon)
 
-running = True
+        return screen
 
-while running:
-    screen.fill((207, 182, 252))
-    screen.blit(square, (250, 250))
-    pygame.draw.line(screen, (0, 0, 0), [100, 100], [100, 10])
-    pygame.display.update()
-    
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-            pygame.quit()
+    def draw_lines(self, screen):
+        # Вертикальные
+        for i in range(1, self.n): 
+            x = self.margin + i * self.cell_size + (i - 1) * self.grid_line_width 
+            pygame.draw.line(screen, (89, 65, 135), (x, self.margin), (x, self.heights - self.margin), self.grid_line_width)
 
-class DrawGameLabel:
-    def __init__(self, playerA_coordinates, playerB_coordinates, n, m):
-        self.screen = self.set_screen(n, m)
-        self.playerA_coordinates = playerA_coordinates
-        self.playerB_coordinates = playerB_coordinates
+        # Горизонтальные
+        for i in range(1, self.m): 
+            y = self.margin + i * self.cell_size + (i - 1) * self.grid_line_width 
+            pygame.draw.line(screen, (89, 65, 135), (self.margin, y), (self.width - self.margin, y), self.grid_line_width)
 
-    def set_screen(self, n: int, m: int):
-        width = n*50 + (n-1)*4 + 10 
-        heights = m*50 + (m-1)*4 + 10
-        return pygame.display.set_mode((width, heights))
-   
-    
-    def draw_lines(self, width: int, heights: int):
+    def launch_game(self):
+        running = True
+        screen = self.init_screen()
 
-        for i in range(50, heights - 5, 50):
-            if i < width - 50:
-                pygame.draw.line(self.screen, (0,0,0), (i, 5), (i, heights - 5), width=3)
+        while running:
+            screen.fill((22, 8, 48))
+
+            self.draw_lines(screen)
+
             
-            pygame.draw.line(self.screen, (0,0,0), (5, i), (width - 5, i), 3)
+            pygame.display.update()
             
-            i+= 3
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    pygame.quit()
+
+game = GameLabel(9, 10)
+game.launch_game()
