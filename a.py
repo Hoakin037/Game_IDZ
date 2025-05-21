@@ -1,29 +1,35 @@
 import pygame
 
-n = 6
-m = 6
-width = n*50 + (n-1)*4 + 10
-heights = m*50 + (m-1)*4 + 10
+n = 9
+m = 10
+cell_size = 50
+grid_line_width = 4 # Толщина линний
+margin = 10  # Отступ
+
+width = n * cell_size + (n - 1) * grid_line_width + 2 * margin
+heights = m * cell_size + (m - 1) * grid_line_width + 2 * margin
 
 pygame.init()
 screen = pygame.display.set_mode((width, heights))
 pygame.display.set_caption("_ИДЗ_3_")
-icon = pygame.image.load("ИДЗ_3/utka20.png")
+icon = pygame.image.load("utka20.png")
 pygame.display.set_icon(icon)
-
 
 running = True
 
 while running:
-    screen.fill((207, 182, 252))
-    for i in range(55, width-10, 53):
-            i += 3
-            if i < width:
-                #Вертикальные
-                pygame.draw.line(screen, (0,0,0), (i, 5), (i, width-5), width=3)
-            #Горизонтальные
-            pygame.draw.line(screen, (0,0,0), (5, i), (width-5, i), 3)
-            
+    screen.fill((22, 8, 48))
+
+    # Вертикальные
+    for i in range(1, n): 
+        x = margin + i * cell_size + (i - 1) * grid_line_width 
+        pygame.draw.line(screen, (89, 65, 135), (x, margin), (x, heights - margin), grid_line_width)
+
+    # Горизонтальные
+    for i in range(1, m): 
+        y = margin + i * cell_size + (i - 1) * grid_line_width 
+        pygame.draw.line(screen, (89, 65, 135), (margin, y), (width - margin, y), grid_line_width)  
+
             
     pygame.display.update()
     
