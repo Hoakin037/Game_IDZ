@@ -1,5 +1,7 @@
 import pygame
 from random import randint
+import platform
+import asyncio
 
 class Player:
     def __init__(self, punch_power, n, m):
@@ -15,14 +17,48 @@ class Player:
 
     
 class GameLabel:
-    def __init__(self, n, m):
+    def __init__(self):
         self.cell_size = 50
         self.grid_line_width = 4 # Толщина линний
         self.margin = 10  # Отступ
-        self.width = n * self.cell_size + (n - 1) * self.grid_line_width + 2 * self.margin
-        self.heights = m * self.cell_size + (m - 1) * self.grid_line_width + 2 * self.margin
+        
+        
+    def set_label(self, n, m):
         self.n = n
-        self.m = m
+        self.m = m  
+        self.width = self.n * self.cell_size + (self.n - 1) * self.grid_line_width + 2 * self.margin
+        self.heights = self.m * self.cell_size + (self.m - 1) * self.grid_line_width + 2 * self.margin
+
+
+    def set_button_and_input_box(self):
+         # Поле ввода
+        input_box = pygame.Rect(200, 200, 400, 50)
+        # Кнопка "Начать"
+        button = pygame.Rect(350, 300, 115, 50)
+        
+        return input_box, button
+    
+    def draw_input_label(self, screen, input_box, button):
+        screen.fill((33, 20, 74))
+        
+        # Шрифты
+        font = pygame.font.SysFont("arial", 36)
+
+        input_text = ""
+        button_text = font.render("Начать", True, (255,255,255))
+
+        # Отрисовка поля ввода
+        pygame.draw.rect(screen, (0,0,0), input_box, 2)
+        text_surface = font.render(input_text, True, (0,0,0))
+        screen.blit(text_surface, (input_box.x + 5, input_box.y + 5))
+        
+        # Отрисовка кнопки
+        pygame.draw.rect(screen, (116, 96, 179), button)
+        screen.blit(button_text, (button.x + 10, button.y + 5))
+
+        pygame.display.flip()
+
+
 
     def init_screen(self):
         pygame.init()
@@ -51,11 +87,42 @@ class GameLabel:
             y = self.margin + i * self.cell_size + (i - 1) * self.grid_line_width 
             pygame.draw.line(screen, (89, 65, 135), (self.margin, y), (self.width - self.margin, y), self.grid_line_width)
 
-    def launch_game(self):
+    async def launch_game(self):
         running = True
         screen = self.init_screen()
+        input_text = ""
+        button, input_box = self.set_button_and_input_box()
+
+        self.draw_input_label(input_box, button)
 
         while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    # Проверка клика по полю ввода
+                    if input_box.collidepoint(event.pos):
+                        active = True
+                    else:
+                        active = False
+                    # Проверка клика по кнопке
+                    if button.collidepoint(event.pos):
+                        n, m = input_text.split()
+                        self.set_label(n, m)
+                elif event.type == pygame.KEYDOWN and active:
+                    if event.key == pygame.K_RETURN:
+                        n, m = input_text.split()
+                        self.set_label(n, m)
+                        input_text = ""
+                    elif event.key == pygame.K_BACKSPACE:
+                        input_text = input_text[:-1]
+                    else:
+                        input_text += event.unicode
+
+
+            self.draw_input_label()
+
+            await asyncio.sleep(1.0 / 60)  # 60 FPS
             screen.fill((22, 8, 48))
 
             self.draw_lines(screen)
@@ -68,5 +135,17 @@ class GameLabel:
                     running = False
                     pygame.quit()
 
-game = GameLabel(9, 10)
-game.launch_game()
+def setup():
+        pass
+
+async def main():
+    setup()
+    game = GameLabel()
+    await game.launch_game()
+
+if platform.system() == "Emscripten":
+    asyncio.ensure_future(main())
+else:
+    if __name__ == "__main__":
+        asyncio.run(main())
+
