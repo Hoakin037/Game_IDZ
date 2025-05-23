@@ -4,10 +4,11 @@ import platform
 import asyncio
 
 class Player:
-    def __init__(self, punch_power, n, m):
+    def __init__(self, punch_power, n, m, name):
         self.place = self.choose_player_place(n, m)
         self.punch_power = punch_power
         self.hp = 100
+        self.name = name  # Имя игрока для отладки
 
     def choose_player_place(self, n, m):
         return (randint(0, n-1), randint(0, m-1))
@@ -41,13 +42,33 @@ class Player:
     def hit_player(self, other, place1, place2):
         x1, y1 = place1[0], place1[1]
         x2, y2 = place2[0], place2[1]
-        
-        diagonal_positions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
-        for i, j in diagonal_positions:
+
+        # Зоны атаки
+        if self.name == "Player 1":
+            # Player 1 может атаковать как король в шахматах (8 клеток вокруг)
+            attack_positions = [
+                (-1, -1), (-1, 0), (-1, 1),  # Верхняя строка
+                (0, -1),           (0, 1),    # Средняя строка (без центра)
+                (1, -1),  (1, 0),  (1, 1)    # Нижняя строка
+            ]
+        else:
+            # Player 2 может атаковать только в стороны (4 клетки)
+            attack_positions = [
+                (-1, 0),  # Вверх
+                (1, 0),   # Вниз
+                (0, -1),  # Влево
+                (0, 1)    # Вправо
+            ]
+
+        can_attack = False
+        for i, j in attack_positions:
             if x1 + i == x2 and y1 + j == y2:
+                can_attack = True
                 other.hp -= self.punch_power
-                print(f"Удар нанесен! HP игрока теперь {other.hp}")
+                print(f"{self.name} нанес удар {other.name}! HP {other.name} теперь {other.hp}")
                 break
+        if not can_attack:
+            print(f"{self.name} не может атаковать {other.name}: не в зоне атаки. Позиция {self.name}: {self.place}, Позиция {other.name}: {other.place}")
 
 class GameLabel:
     def __init__(self):
@@ -71,8 +92,8 @@ class GameLabel:
                 self.width = self.n * self.cell_size + (self.n - 1) * self.grid_line_width + 2 * self.margin
                 self.heights = self.m * self.cell_size + (self.m - 1) * self.grid_line_width + 2 * self.margin
                 # Создаем игроков и проверяем, чтобы они не оказались на одной клетке
-                self.player1 = Player(10, self.n, self.m)
-                self.player2 = Player(20, self.n, self.m)
+                self.player1 = Player(10, self.n, self.m, "Player 1")
+                self.player2 = Player(20, self.n, self.m, "Player 2")
                 while self.player1.place == self.player2.place:
                     self.player2.place = self.player2.choose_player_place(self.n, self.m)
             else:
@@ -199,20 +220,28 @@ class GameLabel:
                             active = False
                         elif self.current_player == 1 and self.player1:
                             if event.key in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT]:
+                                print(f"Ход Player 1. Позиция до хода: {self.player1.place}")
+                                old_place = self.player1.place
                                 self.player1.move_in_label(event.key, self, self.player2.place)
-                                self.player1.hit_player(self.player2, self.player1.place, self.player2.place)
-                                if self.check_game_over():
-                                    running = False
-                                else:
-                                    self.current_player = 2
+                                print(f"Позиция Player 1 после хода: {self.player1.place}")
+                                if old_place != self.player1.place:  # Убедимся, что игрок действительно переместился
+                                    self.player1.hit_player(self.player2, self.player1.place, self.player2.place)
+                                    if self.check_game_over():
+                                        running = False
+                                    else:
+                                        self.current_player = 2  # Переход хода к player2
                         elif self.current_player == 2 and self.player2:
                             if event.key in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT]:
+                                print(f"Ход Player 2. Позиция до хода: {self.player2.place}")
+                                old_place = self.player2.place
                                 self.player2.move_in_label(event.key, self, self.player1.place)
-                                self.player2.hit_player(self.player1, self.player2.place, self.player1.place)
-                                if self.check_game_over():
-                                    running = False
-                                else:
-                                    self.current_player = 1
+                                print(f"Позиция Player 2 после хода: {self.player2.place}")
+                                if old_place != self.player2.place:  # Убедимся, что игрок действительно переместился
+                                    self.player2.hit_player(self.player1, self.player2.place, self.player1.place)
+                                    if self.check_game_over():
+                                        running = False
+                                    else:
+                                        self.current_player = 1  # Переход хода к player1
 
             screen.fill((22, 8, 48))
             if show_input:
