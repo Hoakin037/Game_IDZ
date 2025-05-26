@@ -142,7 +142,7 @@ class GameLabel:
 
     # Отрисовка экрана ввода
     def draw_input_label(self, screen, input_box, button, input_text, active):
-        screen.fill((33, 20, 74))
+        screen.fill((182, 3, 252))
         font = pygame.font.SysFont("arial", 36)
         instruction = font.render("Введите n m (например, 10 10)", True, (255, 255, 255))
         
@@ -281,7 +281,7 @@ class GameLabel:
                                     else:
                                         self.current_player = 1
 
-            screen.fill((22, 8, 48))
+            screen.fill((182, 3, 252))
             if show_input:
                 self.draw_input_label(screen, input_box, button, input_text, active)
             else:
