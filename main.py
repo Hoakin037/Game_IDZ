@@ -4,19 +4,18 @@ import platform
 import asyncio
 
 class Player:
-    def __init__(self, punch_power, n, m, name, health_pickups):
-        self.place = self.choose_player_place(n, m, health_pickups)
+    def __init__(self, punch_power, n, m, name, shield_probability):
+        self.place = self.choose_player_place(n, m)
         self.punch_power = punch_power
         self.hp = 100
         self.name = name
-        self.health_pickups = health_pickups
+        self.shield_probability = shield_probability
 
-    def choose_player_place(self, n, m, health_pickups):
-        while True:
-            pos = (randint(0, n-1), randint(0, m-1))
-            if pos not in health_pickups:
-                return pos
+     # Случайный выбор игрока
+    def choose_player_place(self, n, m):
+        return (randint(0, n-1), randint(0, m-1))
 
+    # Перемещение
     def move(self, direction, n, m, other_place):
         x, y = self.place
         new_x, new_y = x, y
@@ -31,11 +30,8 @@ class Player:
         
         if (new_x, new_y) != other_place:
             self.place = (new_x, new_y)
-            if self.place in self.health_pickups:
-                self.hp += 20
-                print(f"{self.name} picked up a health kit! HP now {self.hp}")
-                self.health_pickups.remove(self.place)
 
+    # Перемещение по полю
     def move_in_label(self, key, game_label, other_place):
         if key == pygame.K_UP:
             self.move("up", game_label.n, game_label.m, other_place)
@@ -68,11 +64,14 @@ class Player:
         for i, j in attack_positions:
             if x1 + i == x2 and y1 + j == y2:
                 can_attack = True
-                other.hp -= self.punch_power
-                #print(f"{self.name} нанес удар {other.name}! HP {other.name} теперь {other.hp}")
+                if randint(1, 100) <= other.shield_probability:
+                    print(f"{other.name} активировал щит и заблокировал атаку игрока {self.name}!")
+                else:
+                    other.hp -= self.punch_power
+                    print(f"{self.name} нанес удар {other.name}! HP {other.name} теперь {other.hp}")
                 break
         #if not can_attack:
-            #print(f"{self.name} не может атаковать {other.name}: не в зоне атаки. Позиция {self.name}: {self.place}, Позиция {other.name}: {other.place}")
+        #    print(f"{self.name} не может атаковать {other.name}: не в зоне атаки. Позиция {self.name}: {self.place}, Позиция {other.name}: {other.place}")
 
 class GameLabel:
     def __init__(self):
@@ -88,7 +87,6 @@ class GameLabel:
         self.current_player = 1
         self.font = None
 
-
     # Инициализация экрана
     def init_screen(self):
         pygame.init()
@@ -103,56 +101,53 @@ class GameLabel:
         return screen
 
     # Установка игрового поля
-    def set_label(self, n, m):
+    def set_label(self, n, m, shield_prob):
         try:
-            n, m = int(n), int(m)
+            n, m, shield_prob = int(n), int(m), int(shield_prob)
             if n < 4 or m < 4:
                 print("Ошибка: Размеры сетки должны быть не менее 4 по каждому измерению")
                 return False
+            if shield_prob < 0 or shield_prob > 100:
+                print("Ошибка: Вероятность активации щита должна быть от 0 до 100")
+                return False
             if 4 <= n <= 20 and 4 <= m <= 20:
                 self.n, self.m = n, m
+
+                # Создание игроков
                 self.width = self.n * self.cell_size + (self.n - 1) * self.grid_line_width + 2 * self.margin
                 self.heights = self.m * self.cell_size + (self.m - 1) * self.grid_line_width + 2 * self.margin
-                
-                # Инициализация аптечек
-                self.health_pickups = []
-                while len(self.health_pickups) < 3:
-                    pos = (randint(0, n-1), randint(0, m-1))
-                    if pos not in self.health_pickups:
-                        self.health_pickups.append(pos)
-                
-                # Создание игроков
-                self.player1 = Player(10, self.n, self.m, "Player 1", self.health_pickups)
-                self.player2 = Player(20, self.n, self.m, "Player 2", self.health_pickups)
-                while self.player1.place == self.player2.place or self.player2.place in self.health_pickups:
-                    self.player2 = Player(20, self.n, self.m, "Player 2", self.health_pickups)
+                self.player1 = Player(10, self.n, self.m, "Player 1", shield_prob)
+                self.player2 = Player(20, self.n, self.m, "Player 2", shield_prob)
+                while self.player1.place == self.player2.place:
+                    self.player2 = Player(20, self.n, self.m, "Player 2", shield_prob)
                 return True
             else:
                 print("Размеры сетки должны быть от 4 до 20")
                 return False
         except ValueError:
-            print("Введите два числа, разделенных пробелом")
+            print("Введите три числа, разделенных пробелом (n m shield_prob)")
             return False
 
     # Установка кнопки и поля для ввода
     def set_button_and_input_box(self, screen_width, screen_height):
-        input_box = pygame.Rect(screen_width // 2 - 100, screen_height // 2 - 25, 200, 50)
+        input_box = pygame.Rect(screen_width // 2 - 150, screen_height // 2 - 25, 300, 50)
         button = pygame.Rect(screen_width // 2 - 57, screen_height // 2 + 40, 115, 50)
         return input_box, button
 
     # Отрисовка экрана ввода
     def draw_input_label(self, screen, input_box, button, input_text, active):
         screen.fill((33, 20, 74))
-        font = pygame.font.SysFont("arial", 36)
-        instruction = font.render("Введите n m (например, 10 10)", True, (255, 255, 255))
-        
+        font = pygame.font.SysFont("arial", 24)
+        instruction = font.render("Введите размеры поля nхm,", True, (255, 255, 255))
         screen.blit(instruction, (screen.get_width() // 2 - instruction.get_width() // 2, screen.get_height() // 2 - 80))
+        instruction = font.render("вероятность выпадения щита(например, 10 10 50)", True, (255, 255, 255))
+        screen.blit(instruction, (screen.get_width() // 2 - instruction.get_width() // 2, screen.get_height() // 2 - 57))
         pygame.draw.rect(screen, (255, 255, 255) if active else (0, 0, 0), input_box, 2)
         text_surface = font.render(input_text, True, (255, 255, 255))
         screen.blit(text_surface, (input_box.x + 5, input_box.y + 5))
         pygame.draw.rect(screen, (116, 96, 179), button)
         button_text = font.render("Начать", True, (255, 255, 255))
-        screen.blit(button_text, (button.x + 10, button.y + 5))
+        screen.blit(button_text, (button.x + 26, button.y + 10))
 
     # Отрисовка игроков
     def draw_player(self, place, screen, color):
@@ -160,7 +155,6 @@ class GameLabel:
         cell_x = self.margin + x * (self.cell_size + self.grid_line_width) + 3
         cell_y = self.margin + y * (self.cell_size + self.grid_line_width) + 3
         pygame.draw.rect(screen, color, (cell_x, cell_y, self.cell_size, self.cell_size))
-
 
     # Отрисовка игровой сетки
     def draw_lines(self, screen):
@@ -176,12 +170,11 @@ class GameLabel:
         player1_hp = self.font.render(f"Player 1 HP: {self.player1.hp}", True, (94, 218, 230))
         player2_hp = self.font.render(f"Player 2 HP: {self.player2.hp}", True, (255, 99, 71))
         turn = self.font.render(f"Turn: Player {self.current_player}", True, (255, 255, 255))
-        
         screen.blit(player1_hp, (10, 10))
         screen.blit(player2_hp, (self.width - player2_hp.get_width() - 10, 10))
         screen.blit(turn, (self.width // 2 - turn.get_width() // 2, 10))
 
-    # Обработка кликов мыши
+    #Обработка начала игры через кнопку
     def handle_mouse_input(self, event, show_input, input_box, button, input_text, screen):
         if show_input and input_box.collidepoint(event.pos):
             return True, input_text, show_input, screen, input_box, button
@@ -189,29 +182,29 @@ class GameLabel:
             active = False
             if show_input and button.collidepoint(event.pos) and input_text:
                 try:
-                    n, m = input_text.split()
-                    if self.set_label(n, m):
+                    n, m, shield_prob = input_text.split()
+                    if self.set_label(n, m, shield_prob):
                         screen = pygame.display.set_mode((self.width, self.heights))
                         input_box, button = self.set_button_and_input_box(self.width, self.heights)
                         show_input = False
                         input_text = ""
                 except ValueError:
-                    print("Введите два числа, разделенных пробелом")
+                    print("Введите три числа, разделенных пробелом (n m shield_prob)")
             return active, input_text, show_input, screen, input_box, button
 
-    #Обработка начала игры через клавиатуру
+    #Обработка начала игры через кнопку
     def handle_key_input(self, event, show_input, active, input_text, screen, input_box, button):
         if show_input and active:
             if event.key == pygame.K_RETURN and input_text:
                 try:
-                    n, m = input_text.split()
-                    if self.set_label(n, m):
+                    n, m, shield_prob = input_text.split()
+                    if self.set_label(n, m, shield_prob):
                         screen = pygame.display.set_mode((self.width, self.heights))
                         input_box, button = self.set_button_and_input_box(self.width, self.heights)
                         show_input = False
                         input_text = ""
                 except ValueError:
-                    print("Введите два числа, разделенных пробелом")
+                    print("Введите три числа, разделенных пробелом (n m shield_prob)")
             elif event.key == pygame.K_BACKSPACE:
                 input_text = input_text[:-1]
             else:
@@ -250,6 +243,8 @@ class GameLabel:
                             show_input = True
                             input_text = ""
                             active = False
+
+                        # Ход 1 игрока
                         elif self.current_player == 1 and self.player1:
                             if event.key in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT]:
                                 print(f"Ход Player 1. Позиция до хода: {self.player1.place}")
@@ -262,6 +257,8 @@ class GameLabel:
                                         running = False
                                     else:
                                         self.current_player = 2
+
+                        # Ход 2 игрока
                         elif self.current_player == 2 and self.player2:
                             if event.key in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT]:
                                 print(f"Ход Player 2. Позиция до хода: {self.player2.place}")

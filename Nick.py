@@ -11,12 +11,14 @@ class Player:
         self.name = name
         self.health_pickups = health_pickups
 
+    # Случайный выбор игрока
     def choose_player_place(self, n, m, health_pickups):
         while True:
             pos = (randint(0, n-1), randint(0, m-1))
             if pos not in health_pickups:
                 return pos
 
+    # Перемещение
     def move(self, direction, n, m, other_place):
         x, y = self.place
         new_x, new_y = x, y
@@ -36,6 +38,7 @@ class Player:
                 print(f"{self.name} picked up a health kit! HP now {self.hp}")
                 self.health_pickups.remove(self.place)
 
+    # Перемещение по полю
     def move_in_label(self, key, game_label, other_place):
         if key == pygame.K_UP:
             self.move("up", game_label.n, game_label.m, other_place)
@@ -46,6 +49,7 @@ class Player:
         elif key == pygame.K_RIGHT:
             self.move("right", game_label.n, game_label.m, other_place)
 
+    # Атака
     def hit_player(self, other, place1, place2):
         x1, y1 = place1[0], place1[1]
         x2, y2 = place2[0], place2[1]
@@ -187,7 +191,7 @@ class GameLabel:
         screen.blit(player2_hp, (self.width - player2_hp.get_width() - 10, 10))
         screen.blit(turn, (self.width // 2 - turn.get_width() // 2, 10))
 
-    # Обработка кликов мыши
+    #Обработка начала игры через кнопку
     def handle_mouse_input(self, event, show_input, input_box, button, input_text, screen):
         if show_input and input_box.collidepoint(event.pos):
             return True, input_text, show_input, screen, input_box, button
@@ -256,6 +260,8 @@ class GameLabel:
                             show_input = True
                             input_text = ""
                             active = False
+
+                        # Ход 1 игрока
                         elif self.current_player == 1 and self.player1:
                             if event.key in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT]:
                                 print(f"Ход Player 1. Позиция до хода: {self.player1.place}")
@@ -268,6 +274,8 @@ class GameLabel:
                                         running = False
                                     else:
                                         self.current_player = 2
+
+                        # Ход 2 игрока
                         elif self.current_player == 2 and self.player2:
                             if event.key in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT]:
                                 print(f"Ход Player 2. Позиция до хода: {self.player2.place}")
